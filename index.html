@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delta Protocol Monitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M16 7 L25 24 H7 Z' fill='%23fff'/%3E%3C/svg%3E">
+<meta name="description" content="Liquidity, fee generation, staking yield and $DELTA token metrics for the Delta protocol on Robinhood Chain.">
+<style>
+:root{
+  color-scheme: light dark;
+  --plane:#f9f9f7; --surface:#fcfcfb; --surface-2:#f2f1ed;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.10);
+  --s1:#2a78d6;
+  --o1:#256abf; --o2:#5598e7; --o3:#86b6ef;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --up:#006300;
+  --shadow:0 1px 2px rgba(11,11,11,.04), 0 6px 20px rgba(11,11,11,.05);
+  --shadow-lg:0 8px 40px rgba(11,11,11,.14);
+  --r:12px;
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+    --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --hair:rgba(255,255,255,.10);
+    --s1:#3987e5;
+    --o1:#3987e5; --o2:#256abf; --o3:#184f95;
+    --up:#0ca30c; --crit:#e66767;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+    --shadow-lg:0 8px 40px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+  --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --hair:rgba(255,255,255,.10);
+  --s1:#3987e5;
+  --o1:#3987e5; --o2:#256abf; --o3:#184f95;
+  --up:#0ca30c; --crit:#e66767;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--plane); color:var(--ink);
+  font:14px/1.55 var(--font); -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1140px;margin:0 auto;padding:26px 20px 72px}
+a{color:var(--s1);text-decoration:none}
+a:hover{text-decoration:underline}
+h1{font-size:22px;font-weight:660;margin:0;letter-spacing:-.015em}
+
+/* ---- header ---- */
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;justify-content:space-between}
+.sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+.hbtns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button.btn{
+  font:inherit;font-size:12.5px;color:var(--ink-2);background:var(--surface);
+  border:1px solid var(--hair);border-radius:8px;padding:6px 12px;cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;
+}
+button.btn:hover{color:var(--ink);border-color:var(--axis)}
+button.btn:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+button.btn[aria-pressed="true"]{background:var(--s1);border-color:var(--s1);color:#fff}
+button.btn.primary{background:var(--s1);border-color:var(--s1);color:#fff}
+button.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.seg-ctl{display:inline-flex;background:var(--surface);border:1px solid var(--hair);border-radius:9px;padding:2px;gap:2px}
+.seg-ctl button{border:none;background:transparent;border-radius:7px;padding:5px 13px;font:inherit;font-size:12.5px;color:var(--muted);cursor:pointer}
+.seg-ctl button[aria-pressed="true"]{background:var(--s1);color:#fff}
+
+/* ---- layout ---- */
+section{margin-top:32px}
+.sec-hd{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+h2{font-size:11.5px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0}
+.sec-note{font-size:12px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.grid>*{min-width:0}
+.card,.chart-card{min-width:0}
+.g6{grid-template-columns:repeat(6,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr);align-items:start}
+@media(max-width:960px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}}
+@media(max-width:600px){.g6,.g4,.g2{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- tiles ---- */
+.tile{position:relative}
+.tile .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:5px}
+.tile .v{font-size:23px;font-weight:640;letter-spacing:-.022em;margin-top:6px;line-height:1.15}
+.tile .n{font-size:12px;color:var(--ink-2);margin-top:4px}
+.pos{color:var(--up)} .neg{color:var(--crit)}
+.qmark{
+  width:14px;height:14px;border-radius:50%;border:1px solid var(--axis);color:var(--muted);
+  font-size:9.5px;line-height:12px;text-align:center;cursor:help;flex:none;background:transparent;
+  padding:0;font-family:var(--font);transition:background .12s,color .12s,border-color .12s;
+}
+.qmark:hover,.qmark:focus-visible{background:var(--s1);border-color:var(--s1);color:#fff;outline:none}
+
+/* ---- explainer popover ---- */
+#pop{
+  position:absolute;z-index:60;max-width:330px;opacity:0;visibility:hidden;transform:translateY(4px);
+  transition:opacity .13s,transform .13s,visibility .13s;
+  background:var(--surface);border:1px solid var(--axis);border-radius:11px;
+  padding:13px 15px;box-shadow:var(--shadow-lg);
+}
+#pop.on{opacity:1;visibility:visible;transform:translateY(0)}
+#pop .pt{font-size:12.5px;font-weight:640;margin-bottom:5px}
+#pop .pw{font-size:12.5px;color:var(--ink-2);line-height:1.55}
+#pop .px{font-size:12px;color:var(--ink-2);line-height:1.55;margin-top:9px;padding-top:9px;border-top:1px solid var(--grid)}
+#pop .px b{color:var(--ink);font-weight:640}
+
+/* ---- beginner cards ---- */
+.b-card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);padding:17px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}
+.b-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.b-k{font-size:12.5px;font-weight:640;color:var(--ink)}
+.b-v{font-size:27px;font-weight:660;letter-spacing:-.025em;margin:7px 0 2px;line-height:1.1}
+.b-read{font-size:12.5px;color:var(--ink-2)}
+.b-why{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:10px;padding-top:10px;border-top:1px solid var(--grid)}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:620;
+  border-radius:999px;padding:3px 9px;white-space:nowrap;border:1px solid transparent;
+}
+.chip .dot{width:6px;height:6px;border-radius:50%;flex:none}
+.chip.good{color:var(--up);background:color-mix(in oklab,var(--good) 12%,transparent);border-color:color-mix(in oklab,var(--good) 30%,transparent)}
+.chip.good .dot{background:var(--good)}
+.chip.warn{color:var(--ink-2);background:color-mix(in oklab,var(--warn) 16%,transparent);border-color:color-mix(in oklab,var(--warn) 40%,transparent)}
+.chip.warn .dot{background:var(--warn)}
+.chip.risk{color:var(--crit);background:color-mix(in oklab,var(--crit) 11%,transparent);border-color:color-mix(in oklab,var(--crit) 30%,transparent)}
+.chip.risk .dot{background:var(--crit)}
+.chip.flat{color:var(--ink-2);background:var(--surface-2);border-color:var(--hair)}
+.chip.flat .dot{background:var(--muted)}
+
+/* ---- direction banner ---- */
+.dir{
+  background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);
+  padding:18px 20px;box-shadow:var(--shadow);display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;
+}
+.dir-l{flex:1 1 320px;min-width:0}
+.dir-h{font-size:17px;font-weight:660;letter-spacing:-.015em;display:flex;align-items:center;gap:9px}
+.dir-s{font-size:13.5px;color:var(--ink-2);margin-top:7px;line-height:1.6;max-width:64ch}
+.dir-sig{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.sig{font-size:11px;color:var(--muted);border:1px solid var(--hair);border-radius:7px;padding:3px 8px;font-variant-numeric:tabular-nums}
+.sig b{font-weight:640;color:var(--ink-2)}
+
+/* ---- charts ---- */
+.chart-card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r);padding:14px 14px 8px;position:relative;box-shadow:var(--shadow)}
+.chart-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px}
+.chart-t{font-size:12.5px;font-weight:640;color:var(--ink);display:flex;align-items:center;gap:5px}
+.chart-now{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.chart-sub{font-size:11px;color:var(--muted);margin-bottom:6px}
+.plot{width:100%;display:block;touch-action:none}
+.plot:focus-visible{outline:2px solid var(--s1);outline-offset:2px;border-radius:4px}
+.tip{
+  position:absolute;pointer-events:none;opacity:0;transition:opacity .08s;
+  background:var(--surface);border:1px solid var(--axis);border-radius:8px;
+  padding:6px 9px;font-size:12px;box-shadow:var(--shadow-lg);
+  white-space:nowrap;z-index:5;font-variant-numeric:tabular-nums;
+}
+.empty{color:var(--muted);font-size:12.5px;padding:26px 4px;text-align:center}
+
+/* ---- tables ---- */
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:right;padding:8px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+thead th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650;border-bottom:1px solid var(--grid)}
+tbody tr+tr td{border-top:1px solid var(--grid)}
+tbody tr:hover td{background:color-mix(in oklab,var(--s1) 6%,transparent)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+.tag{display:inline-block;font-size:10px;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--hair);border-radius:5px;padding:1px 5px;color:var(--muted);margin-left:5px}
+
+/* ---- bars ---- */
+.bar-track{display:inline-block;vertical-align:middle;height:8px;background:color-mix(in oklab,var(--axis) 34%,transparent);border-radius:4px;overflow:hidden}
+.bar-fill{display:block;height:100%;background:var(--s1);border-radius:4px}
+.seg{display:flex;gap:2px;height:26px;border-radius:6px;overflow:hidden;margin:10px 0 8px}
+.seg>i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-2);margin-top:2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;flex:none}
+
+.note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--grid);font-size:12px;color:var(--muted);line-height:1.7}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:12.5px}
+.kv+.kv{border-top:1px solid var(--grid)}
+.kv b{font-weight:640;font-variant-numeric:tabular-nums}
+.hide{display:none!important}
+.banner{
+  background:color-mix(in oklab,var(--warn) 14%,var(--surface));
+  border:1px solid color-mix(in oklab,var(--warn) 42%,var(--hair));
+  border-radius:9px;padding:10px 13px;font-size:12.5px;color:var(--ink-2);margin-top:14px;
+}
+body[data-mode="simple"] .adv{display:none}
+
+/* ---- share modal ---- */
+#modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.62)}
+#modal.on{display:flex}
+.modal-box{background:var(--surface);border-radius:16px;padding:16px;max-width:min(420px,92vw);max-height:92vh;overflow:auto;box-shadow:var(--shadow-lg)}
+.modal-box img{width:100%;display:block;border-radius:9px;border:1px solid var(--hair)}
+.modal-row{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+@media(max-width:520px){.modal-row #card-close{margin-left:0}.modal-row{gap:8px}}
+.modal-hint{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5}
+</style>
+</head>
+<body data-mode="simple">
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>Delta Protocol Monitor</h1>
+    <div class="sub" id="subtitle">Robinhood Chain &middot; loading&hellip;</div>
+  </div>
+  <div class="hbtns">
+    <div class="seg-ctl" id="mode" role="group" aria-label="Detail level">
+      <button data-mode="simple" aria-pressed="true">Simple</button>
+      <button data-mode="full" aria-pressed="false">Full</button>
+    </div>
+    <button class="btn primary" id="share">Share card</button>
+    <button class="btn" id="refresh" title="Re-read the live endpoints">Refresh</button>
+    <button class="btn" id="theme" title="Toggle theme">Theme</button>
+  </div>
+</header>
+
+<div id="banner" class="banner hide"></div>
+
+<!-- ============ direction ============ -->
+<section style="margin-top:22px">
+  <div class="dir" id="direction"></div>
+</section>
+
+<!-- ============ beginner ============ -->
+<section>
+  <div class="sec-hd">
+    <h2>What actually moves the price</h2>
+    <div class="sec-note">Six numbers, in plain language. Every card says why it matters.</div>
+  </div>
+  <div class="grid g3" id="beginner"></div>
+</section>
+
+<!-- ============ headline ============ -->
+<section class="adv">
+  <div class="sec-hd"><h2>Protocol at a glance</h2></div>
+  <div class="grid g6" id="tiles-top"></div>
+</section>
+
+<!-- ============ growth ============ -->
+<section>
+  <div class="sec-hd">
+    <h2>Growth over time</h2>
+    <div class="hbtns" id="ranges" role="group" aria-label="Time range">
+      <button class="btn" data-range="7">7d</button>
+      <button class="btn" data-range="30">30d</button>
+      <button class="btn" data-range="0" aria-pressed="true">All</button>
+      <button class="btn adv" id="toggle-table" aria-pressed="false">Table</button>
+    </div>
+  </div>
+  <div class="chart-sub" style="margin:0 0 12px" id="hist-note"></div>
+  <div class="grid g3" id="charts"></div>
+  <div class="card hide" id="hist-table" style="margin-top:12px">
+    <div class="tbl-wrap"><table id="hist-table-el"></table></div>
+  </div>
+</section>
+
+<!-- ============ liquidity ============ -->
+<section class="adv">
+  <div class="sec-hd"><h2>DELTA/WETH liquidity shape</h2></div>
+  <div class="grid g4" id="tiles-liq" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div class="chart-t">Where the pool's capital sits relative to spot</div>
+    <div class="chart-sub" id="depth-sub"></div>
+    <div class="seg" id="depth-seg"></div>
+    <div class="legend" id="depth-legend"></div>
+    <div class="note" id="depth-note"></div>
+  </div>
+</section>
+
+<!-- ============ staking ============ -->
+<section class="adv">
+  <div class="sec-hd"><h2>Stakes &amp; real yield</h2></div>
+  <div class="grid g4" id="tiles-stake" style="margin-bottom:12px"></div>
+  <div class="card">
+    <div class="tbl-wrap"><table id="farms-table"></table></div>
+    <div class="note">APR = current on-chain WETH emission rate &times; 365, over the USD value of what is staked right now. Rewards are paid in WETH, not a minted token, so this is real yield &mdash; but a small staked base makes the percentage swing hard.</div>
+  </div>
+</section>
+
+<!-- ============ token ============ -->
+<section class="adv">
+  <div class="sec-hd"><h2>$DELTA token</h2></div>
+  <div class="grid g4" id="tiles-token" style="margin-bottom:12px"></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="chart-t">Supply &amp; concentration</div>
+      <div class="chart-sub">Share of total supply (1B DELTA)</div>
+      <div class="seg" id="conc-seg"></div>
+      <div class="legend" id="conc-legend"></div>
+      <div style="margin-top:12px" id="conc-kv"></div>
+    </div>
+    <div class="card">
+      <div class="chart-t">Largest holders</div>
+      <div class="chart-sub">Contracts are labelled &mdash; the locker and the pool itself are not wallets</div>
+      <div id="holders-list" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ pools ============ -->
+<section class="adv">
+  <div class="sec-hd">
+    <h2>Busiest pools on Delta, 24h</h2>
+    <div class="sec-note">Chain-wide activity across the pools Delta indexes &mdash; not Delta's own volume</div>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table id="pools-table"></table></div></div>
+</section>
+
+<footer>
+  <div id="foot-sources"></div>
+  <div id="foot-notes" style="margin-top:10px"></div>
+  <div style="margin-top:10px">Information only, not financial advice.</div>
+</footer>
+
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-label="Share card">
+  <div class="modal-box">
+    <img id="card-img" alt="Delta protocol summary card">
+    <div class="modal-row">
+      <button class="btn primary" id="card-dl">Download PNG</button>
+      <div class="seg-ctl" id="card-size" role="group" aria-label="Card size">
+        <button data-size="45" aria-pressed="true">4:5 mobile</button>
+        <button data-size="169" aria-pressed="false">16:9</button>
+      </div>
+      <button class="btn" id="card-close" style="margin-left:auto">Close</button>
+    </div>
+    <div class="modal-hint">Sized to fill the timeline on X without cropping. On a phone, long-press the image to save it.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ------------------------------------------------------------ formatting ---
+const nf = (v, d = 0) => (v == null || !isFinite(v)) ? '—'
+  : v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function usd(v, opts = {}) {
+  if (v == null || !isFinite(v)) return '—';
+  const a = Math.abs(v);
+  if (opts.compact !== false) {
+    if (a >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+    if (a >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+    if (a >= 1e4) return '$' + (v / 1e3).toFixed(1) + 'K';
+  }
+  if (a >= 1) return '$' + nf(v, 2);
+  if (a >= 0.01) return '$' + v.toFixed(4);
+  if (a === 0) return '$0';
+  return '$' + v.toPrecision(3);
+}
+const pct = (v, d = 1) => v == null || !isFinite(v) ? '—' : v.toFixed(d) + '%';
+const signed = (v, d = 1) => v == null || !isFinite(v) ? '—' : (v >= 0 ? '+' : '') + v.toFixed(d) + '%';
+const short = (a) => !a ? '—' : a.length > 20 ? a.slice(0, 6) + '…' + a.slice(-4) : a;
+const ago = (ts) => {
+  const s = Math.max(0, Math.floor(Date.now() / 1000) - ts);
+  if (s < 90) return s + 's ago';
+  if (s < 5400) return Math.round(s / 60) + 'm ago';
+  if (s < 172800) return Math.round(s / 3600) + 'h ago';
+  return Math.round(s / 86400) + 'd ago';
+};
+const el = (tag, cls, html) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  return e;
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const SCOUT = 'https://robinhoodchain.blockscout.com';
+const addrLink = (a, text) => a && a.length === 42
+  ? `<a href="${SCOUT}/address/${esc(a)}" target="_blank" rel="noopener">${esc(text || short(a))}</a>`
+  : esc(text || short(a));
+const css = (n) => getComputedStyle(document.body).getPropertyValue(n).trim();
+
+let SNAP = null, HIST = [], RANGE = 0, CARD_SIZE = 45;
+
+// =============================================================== explainers ==
+// Every entry: what the number is, and the mechanism by which it reaches price.
+// Kept in one place so the wording stays consistent wherever a metric appears.
+const WHY = {
+  price: ['DELTA price',
+    'The spot price in the DELTA/WETH pool, read from the pool contract itself rather than from an index.',
+    'This is the price you actually trade against. Everything else on this page is context for whether it can hold.'],
+  mcap: ['Market cap',
+    'The full token supply priced at spot \u2014 the same convention Delta\u2019s own site, its market-cap chart and every aggregator use, so the number is directly comparable.',
+    'Market cap, not price, is what you compare between tokens. A $0.02 token with 1B supply is the same size as a $20 token with 1M supply.'],
+  locked: ['Locked supply',
+    'Tokens sitting in a locker contract, which market cap already prices even though they cannot trade today.',
+    'Locked supply is sell pressure on a timer. It is already in the headline number, so an unlock does not raise market cap \u2014 it raises the amount of stock that can hit the market at that same valuation.'],
+  float: ['Tradeable float',
+    'Market cap counts every token; float counts only the ones that can actually be sold today.',
+    'Float is the supply your exit competes with. Two tokens with the same market cap but very different floats behave nothing alike when everyone heads for the door at once.'],
+  fees: ['Protocol fees, 24h',
+    'Trading fees actually collected by Delta positions in the last 24 hours — real revenue from real swaps, not emissions.',
+    'Fees are the closest thing to earnings a protocol has. Rising fees mean people are using it, which is the durable reason for a token to be worth something. Falling fees while price holds is the warning sign.'],
+  feeYield: ['Fee yield on TVL',
+    'Fees earned by Delta positions divided by the value sitting in them, as a daily rate.',
+    'This is what liquidity providers actually earn for showing up. High yield attracts more liquidity, which deepens the market; if it collapses, LPs leave and the market gets thinner.'],
+  depth: ['Depth within ±2%',
+    'How much capital sits close enough to the current price to absorb a trade before it moves 2%. Measured by walking the pool\'s tick ranges, not by dividing TVL.',
+    'This is your exit. Thin depth means a modest sell drops the price hard — and the same thinness sends it up hard on the way in. It is the single biggest reason a small-cap chart looks violent.'],
+  turnover: ['Daily turnover',
+    'The day\'s trading volume as a share of circulating market cap.',
+    'High turnover means attention and easy entry or exit. Very high turnover with flat price usually means holders are rotating rather than accumulating. Near-zero turnover means you may not be able to sell size at all.'],
+  concentration: ['Whale concentration',
+    'Share of supply held by the ten largest wallets, excluding contracts like the pool and the locker.',
+    'Concentrated supply means a handful of people can decide your exit price. When depth is thin and concentration is high, one wallet leaving is the whole move.'],
+  tvl: ['Delta TVL',
+    'Capital sitting inside Delta positions right now. Not the total depth of the underlying pools.',
+    'TVL is the capital base the fee engine runs on. Growing TVL alongside growing fees is healthy; TVL draining while price holds means the people closest to the protocol are stepping back.'],
+  holders: ['Holders',
+    'Distinct addresses holding a non-zero DELTA balance.',
+    'A steadily rising holder count means distribution is widening. Falling holders during a price rise means fewer people hold more — the opposite of what you want before you buy.'],
+  emissions: ['Staking rewards',
+    'WETH streamed to stakers, and how long the current funding lasts.',
+    'Rewards paid in WETH cannot dilute you — nothing is minted. But the stream stops when funding runs out, so a short runway means the yield you see today may not exist next week.'],
+  staked: ['Value staked',
+    'The USD value locked in Delta stake vaults.',
+    'Staked capital is capital that is not for sale. A rising share removes supply from the market; a falling one puts it back.'],
+  volume: ['Chain volume, 24h',
+    'Total traded across every pool Delta indexes — the whole chain\'s activity, not Delta\'s own.',
+    'Context for how busy Robinhood Chain is overall. Delta earns from a slice of this, so chain-wide quiet eventually shows up in Delta\'s fees.'],
+  positions: ['Open positions',
+    'Cumulative count of liquidity positions created through Delta.',
+    'A proxy for how many people are choosing to provide liquidity here rather than elsewhere. Growth in positions usually precedes growth in fees.'],
+  active: ['Active vs idle liquidity',
+    'Capital within ±2% of spot versus capital parked out of range doing nothing.',
+    'Only active liquidity earns fees or cushions a trade. A pool can show a large TVL while almost none of it is doing work — which is exactly the case here.'],
+  capeff: ['Capital efficiency',
+    'The pool\'s 24h volume divided by the capital actually within ±2% of spot.',
+    'A high number means a small amount of well-placed capital is doing all the work. It is a sign of efficiency, and also of fragility: if that thin slice leaves, the market gets much worse very quickly.'],
+};
+
+const pop = document.getElementById('pop');
+let popTimer = null;
+function showPop(anchor, key) {
+  const w = WHY[key];
+  if (!w) return;
+  pop.innerHTML = `<div class="pt">${esc(w[0])}</div><div class="pw">${esc(w[1])}</div><div class="px"><b>Why it matters for price.</b> ${esc(w[2])}</div>`;
+  pop.classList.add('on');
+  const r = anchor.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = r.left + window.scrollX + r.width / 2 - pw / 2;
+  left = Math.max(10, Math.min(left, document.documentElement.clientWidth - pw - 10));
+  let top = r.bottom + window.scrollY + 8;
+  if (r.bottom + ph + 16 > window.innerHeight && r.top > ph + 16) top = r.top + window.scrollY - ph - 8;
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+const hidePop = () => pop.classList.remove('on');
+
+/** A "?" button that opens the explainer on hover, focus or tap. */
+function qmark(key) {
+  const b = el('button', 'qmark', '?');
+  b.type = 'button';
+  b.setAttribute('aria-label', 'Why this matters');
+  const open = () => { clearTimeout(popTimer); showPop(b, key); };
+  const close = () => { popTimer = setTimeout(hidePop, 120); };
+  b.addEventListener('pointerenter', open);
+  b.addEventListener('pointerleave', close);
+  b.addEventListener('focus', open);
+  b.addEventListener('blur', hidePop);
+  b.addEventListener('click', (e) => { e.preventDefault(); pop.classList.contains('on') ? hidePop() : open(); });
+  return b;
+}
+pop.addEventListener('pointerenter', () => clearTimeout(popTimer));
+pop.addEventListener('pointerleave', hidePop);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hidePop(); });
+
+// ------------------------------------------------------------ line chart ---
+function lineChart(host, { title, points, fmt, sub, why }) {
+  const card = el('div', 'chart-card');
+  const hd = el('div', 'chart-hd');
+  const t = el('div', 'chart-t');
+  t.append(document.createTextNode(title));
+  if (why) t.append(qmark(why));
+  hd.append(t);
+  const now = el('div', 'chart-now');
+  hd.append(now);
+  card.append(hd, el('div', 'chart-sub', esc(sub || '')));
+
+  if (!points || points.length < 2) {
+    if (points && points.length === 1) now.textContent = fmt(points[0].v);
+    card.append(el('div', 'empty', points && points.length === 1
+      ? 'One snapshot so far — the line appears after the next collection.'
+      : 'No data yet.'));
+    host.append(card);
+    return;
+  }
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'plot');
+  svg.setAttribute('tabindex', '0');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', `${title}: ${fmt(points[0].v)} to ${fmt(points[points.length - 1].v)}`);
+  card.append(svg);
+  const tip = el('div', 'tip');
+  card.append(tip);
+  host.append(card);
+
+  const H = 134, AX = 22, PL = 6, PR = 6, PT = 15;
+  let W = 0, xs = [], ys = [], cursor = -1;
+
+  function draw() {
+    W = card.clientWidth - 28;
+    if (W < 60) return;
+    const vs = points.map((p) => p.v).filter((v) => v != null && isFinite(v));
+    if (!vs.length) return;
+    let lo = Math.min(...vs), hi = Math.max(...vs);
+    if (lo === hi) { hi = lo === 0 ? 1 : lo * 1.08; lo = lo === 0 ? -1 : lo * 0.92; }
+    const padv = (hi - lo) * 0.12; hi += padv; lo -= padv;
+    if (Math.min(...vs) >= 0 && lo < 0) lo = 0;
+
+    const iw = W - PL - PR, ih = H - PT - AX;
+    xs = points.map((_, i) => PL + (points.length === 1 ? iw / 2 : (i / (points.length - 1)) * iw));
+    ys = points.map((p) => p.v == null ? null : PT + ih - ((p.v - lo) / (hi - lo)) * ih);
+
+    const S = (t, a) => {
+      const n = document.createElementNS('http://www.w3.org/2000/svg', t);
+      for (const k in a) n.setAttribute(k, a[k]);
+      return n;
+    };
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('width', W); svg.setAttribute('height', H);
+    svg.textContent = '';
+
+    for (let g = 0; g <= 2; g++) {
+      const y = PT + (ih * g) / 2;
+      svg.append(S('line', { x1: PL, x2: W - PR, y1: y, y2: y, stroke: css('--grid'), 'stroke-width': 1 }));
+      const lbl = S('text', {
+        x: PL, y: y - 5, fill: css('--muted'), 'font-size': 9.5,
+        'font-family': css('--font'), style: 'font-variant-numeric:tabular-nums'
+      });
+      lbl.textContent = fmt(hi - ((hi - lo) * g) / 2);
+      svg.append(lbl);
+    }
+    svg.append(S('line', { x1: PL, x2: W - PR, y1: PT + ih, y2: PT + ih, stroke: css('--axis'), 'stroke-width': 1 }));
+
+    const pts = points.map((p, i) => ys[i] == null ? null : [xs[i], ys[i]]).filter(Boolean);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    svg.append(S('path', {
+      d: d + ` L${pts[pts.length - 1][0].toFixed(1)} ${PT + ih} L${pts[0][0].toFixed(1)} ${PT + ih} Z`,
+      fill: css('--s1'), opacity: 0.09
+    }));
+    svg.append(S('path', { d, fill: 'none', stroke: css('--s1'), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    const last = pts[pts.length - 1];
+    svg.append(S('circle', { cx: last[0], cy: last[1], r: 4, fill: css('--s1'), stroke: css('--surface'), 'stroke-width': 2 }));
+
+    const dl = (i, anchor) => {
+      const n = S('text', { x: anchor === 'end' ? W - PR : PL, y: H - 6, fill: css('--muted'), 'font-size': 9.5, 'font-family': css('--font'), 'text-anchor': anchor });
+      n.textContent = points[i].label;
+      svg.append(n);
+    };
+    dl(0, 'start'); dl(points.length - 1, 'end');
+
+    const cross = S('g', { opacity: 0 });
+    const cl = S('line', { y1: PT, y2: PT + ih, stroke: css('--axis'), 'stroke-width': 1 });
+    const cd = S('circle', { r: 4.5, fill: css('--s1'), stroke: css('--surface'), 'stroke-width': 2 });
+    cross.append(cl, cd); svg.append(cross);
+    svg.__cross = { g: cross, line: cl, dot: cd };
+    now.textContent = fmt(points[points.length - 1].v);
+  }
+
+  function moveTo(i) {
+    if (i < 0 || i >= points.length || ys[i] == null) return;
+    cursor = i;
+    const c = svg.__cross;
+    c.g.setAttribute('opacity', 1);
+    c.line.setAttribute('x1', xs[i]); c.line.setAttribute('x2', xs[i]);
+    c.dot.setAttribute('cx', xs[i]); c.dot.setAttribute('cy', ys[i]);
+    tip.innerHTML = `<b>${fmt(points[i].v)}</b><br><span style="color:var(--muted)">${esc(points[i].full)}</span>`;
+    tip.style.opacity = 1;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.max(6, Math.min(xs[i] + 14 - tw / 2 + 7, card.clientWidth - tw - 8)) + 'px';
+    tip.style.top = Math.max(2, ys[i] - 46) + 'px';
+  }
+  const clear = () => { cursor = -1; if (svg.__cross) svg.__cross.g.setAttribute('opacity', 0); tip.style.opacity = 0; };
+  function nearest(clientX) {
+    const r = svg.getBoundingClientRect();
+    const x = ((clientX - r.left) / r.width) * W;
+    let best = 0, bd = Infinity;
+    xs.forEach((v, i) => { const d = Math.abs(v - x); if (d < bd) { bd = d; best = i; } });
+    return best;
+  }
+  svg.addEventListener('pointermove', (e) => moveTo(nearest(e.clientX)));
+  svg.addEventListener('pointerleave', clear);
+  svg.addEventListener('blur', clear);
+  svg.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { moveTo(cursor < 0 ? 0 : Math.min(cursor + 1, points.length - 1)); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { moveTo(cursor < 0 ? points.length - 1 : Math.max(cursor - 1, 0)); e.preventDefault(); }
+    if (e.key === 'Escape') clear();
+  });
+
+  draw();
+  new ResizeObserver(() => { draw(); clear(); }).observe(card);
+}
+
+// ------------------------------------------------------------ components ---
+function tile(host, k, v, note, cls, why) {
+  const c = el('div', 'card tile');
+  const kk = el('div', 'k');
+  kk.append(document.createTextNode(k));
+  if (why) kk.append(qmark(why));
+  c.append(kk, el('div', 'v', v));
+  if (note) c.append(el('div', 'n' + (cls ? ' ' + cls : ''), note));
+  host.append(c);
+}
+
+function table(node, cols, rows) {
+  node.textContent = '';
+  const thead = el('thead'), tr = el('tr');
+  cols.forEach((c) => tr.append(el('th', null, esc(c.h))));
+  thead.append(tr); node.append(thead);
+  const tb = el('tbody');
+  rows.forEach((r) => {
+    const t = el('tr');
+    cols.forEach((c) => { const td = el('td'); td.innerHTML = c.f(r); t.append(td); });
+    tb.append(t);
+  });
+  node.append(tb);
+}
+
+function stackedBar(segHost, legendHost, segs) {
+  const total = segs.reduce((s, x) => s + Math.max(x.v, 0), 0) || 1;
+  segHost.textContent = ''; legendHost.textContent = '';
+  segs.forEach((s) => {
+    const i = el('i');
+    i.style.width = Math.max((s.v / total) * 100, 0.35) + '%';
+    i.style.background = s.c;
+    i.title = `${s.k}: ${s.t}`;
+    segHost.append(i);
+    const sp = el('span'), sw = el('span', 'sw');
+    sw.style.background = s.c;
+    sp.append(sw, document.createTextNode(`${s.k} — ${s.t}`));
+    legendHost.append(sp);
+  });
+}
+
+// ================================================================ beginner ==
+/** Threshold -> {tone, word}. Tones ship with a word, never colour alone. */
+function assess(value, bands) {
+  for (const b of bands) if (value >= b[0]) return { tone: b[1], word: b[2] };
+  const l = bands[bands.length - 1];
+  return { tone: l[1], word: l[2] };
+}
+
+function beginnerCards() {
+  const s = SNAP, d = s.delta, L = d.liquidity, sup = d.supply, h = d.holders, st = s.staking;
+  const host = document.getElementById('beginner');
+  host.textContent = '';
+
+  const card = ({ key, label, value, read, chip, why }) => {
+    const c = el('div', 'b-card');
+    const top = el('div', 'b-top');
+    const k = el('div', 'b-k');
+    k.append(document.createTextNode(label));
+    top.append(k);
+    if (chip) top.append(el('span', 'chip ' + chip.tone, `<span class="dot"></span>${esc(chip.word)}`));
+    c.append(top, el('div', 'b-v', value), el('div', 'b-read', read));
+    c.append(el('div', 'b-why', esc(WHY[key][2])));
+    host.append(c);
+  };
+
+  const chg = d.change24hPct;
+  card({
+    key: 'price', label: 'Price',
+    value: `${usd(d.priceUsd, { compact: false })} <span style="font-size:15px;font-weight:600" class="${chg >= 0 ? 'pos' : 'neg'}">${signed(chg, 1)}</span>`,
+    read: `Market cap ${usd(sup.marketCapUsd)} · tradeable float ${usd(sup.floatCapUsd)}`,
+    chip: chg == null ? null : chg >= 0 ? { tone: 'good', word: 'Up 24h' } : { tone: 'risk', word: 'Down 24h' },
+  });
+
+  const sell2 = L.depth.pct2?.sellDepthUsd ?? 0;
+  const depthChip = assess(L.activePct, [[8, 'good', 'Deep'], [3, 'warn', 'Moderate'], [0, 'risk', 'Thin']]);
+  card({
+    key: 'depth', label: 'How much you can sell',
+    value: usd(sell2),
+    read: `Selling roughly this much moves the price down about 2%. Only ${pct(L.activePct, 1)} of the pool's ${usd(L.poolTvlUsd)} sits that close to spot.`,
+    chip: depthChip,
+  });
+
+  const feeRatio = s.momentum?.feeVsWeek;
+  const feeChip = feeRatio == null ? null
+    : assess(feeRatio, [[1.15, 'good', 'Above pace'], [0.85, 'flat', 'On pace'], [0, 'risk', 'Below pace']]);
+  card({
+    key: 'fees', label: 'Real revenue, 24h',
+    value: usd(s.protocol.fees.h24),
+    read: feeRatio == null ? 'Fees collected by Delta positions from actual swaps.'
+      : `${feeRatio >= 1 ? feeRatio.toFixed(1) + '× the weekly average' : (100 - feeRatio * 100).toFixed(0) + '% below the weekly average'} · ${usd(s.protocol.lifetimeFeesUsd)} all-time`,
+    chip: feeChip,
+  });
+
+  const lockedPct = sup.lockedPctOfSupply ?? 0;
+  card({
+    key: 'locked', label: 'Locked supply',
+    value: pct(lockedPct, 0),
+    read: `${nf(sup.nonCirculating / 1e6, 0)}M of ${nf(sup.total / 1e6, 0)}M DELTA sits in the locker. Market cap already prices it; the tradeable float is worth ${usd(sup.floatCapUsd)}.`,
+    chip: assess(-lockedPct, [[-10, 'good', 'Mostly free'], [-30, 'warn', 'Some locked'], [-100, 'risk', 'Heavily locked']]),
+  });
+
+  card({
+    key: 'concentration', label: 'Whale concentration',
+    value: pct(h.top10WalletsPct, 1),
+    read: `Held by the ten largest wallets, contracts excluded. All addresses together: ${pct(h.top10Pct, 1)} across ${nf(h.count)} holders.`,
+    chip: assess(-h.top10WalletsPct, [[-10, 'good', 'Spread out'], [-25, 'warn', 'Moderate'], [-100, 'risk', 'Concentrated']]),
+  });
+
+  const turn = d.turnover24hPct;
+  card({
+    key: 'turnover', label: 'Traded today',
+    value: pct(turn, 0),
+    read: `${usd(d.volume24hUsd)} of volume against a ${usd(sup.floatCapUsd)} tradeable float, across ${nf(d.trades24h)} trades${d.poolCount > 1 ? ` in ${d.poolCount} pools` : ''}.`,
+    chip: turn == null ? null : assess(turn, [[20, 'good', 'Liquid'], [5, 'flat', 'Normal'], [0, 'risk', 'Quiet']]),
+  });
+}
+
+// =============================================================== direction ==
+function renderDirection() {
+  const s = SNAP, dir = s.direction;
+  const host = document.getElementById('direction');
+  host.textContent = '';
+  if (!dir) return;
+  const tone = { expanding: 'good', cooling: 'risk', steady: 'flat' }[dir.state] || 'flat';
+  const left = el('div', 'dir-l');
+  const hd = el('div', 'dir-h');
+  hd.append(el('span', 'chip ' + tone, `<span class="dot"></span>${esc(dir.headline)}`));
+  hd.append(document.createTextNode('Delta, right now'));
+  left.append(hd, el('div', 'dir-s', esc(dir.summary)));
+  const sig = el('div', 'dir-sig');
+  (dir.signals || []).forEach((x) => {
+    const arrow = x.score > 0 ? '↑' : x.score < 0 ? '↓' : '→';
+    sig.append(el('span', 'sig', `${esc(x.label)} <b>${arrow} ${x.value.toFixed(2)}×</b>`));
+  });
+  left.append(sig);
+  host.append(left);
+}
+
+// ------------------------------------------------------------------ render ---
+function renderHead() {
+  const s = SNAP;
+  const chg = s.delta.change24hPct;
+  document.getElementById('subtitle').innerHTML =
+    `Robinhood Chain &middot; DELTA ${usd(s.delta.priceUsd, { compact: false })} ` +
+    `<span class="${chg >= 0 ? 'pos' : 'neg'}">${signed(chg, 2)}</span> &middot; ` +
+    `updated ${ago(s.ts)} &middot; block ${nf(s.block)}`;
+
+  const age = Math.floor(Date.now() / 1000) - s.ts;
+  const b = document.getElementById('banner');
+  const drift = s.freshness?.apiEthUsdDriftPct;
+  if (drift != null && Math.abs(drift) > 0.75) {
+    // Every USD figure is scaled by ETH/USD, so say plainly where the rate came from.
+    b.classList.remove('hide');
+    b.innerHTML = `ETH/USD is read live from the chain (<b>${usd(s.ethUsd, { compact: false })}</b>). ` +
+      `Delta's cached rate currently reads ${usd(s.ethUsdApi, { compact: false })}, ` +
+      `<b>${signed(drift, 1)}</b> away \u2014 using it would move every dollar figure on this page by that much.`;
+  } else if (s.seed) {
+    b.classList.remove('hide');
+    b.innerHTML = 'This is the bundled starter snapshot. It is replaced the first time the collector runs, and the growth charts fill in from there.';
+  } else if (age > 6 * 3600) {
+    b.classList.remove('hide');
+    b.innerHTML = `Last snapshot was <b>${ago(s.ts)}</b> — the 4-hourly job may not have run. Check the Actions tab of the repository.`;
+  } else b.classList.add('hide');
+}
+
+function renderTiles() {
+  const s = SNAP, p = s.protocol, d = s.delta;
+  const t = document.getElementById('tiles-top');
+  t.textContent = '';
+  tile(t, 'Delta TVL', usd(p.managedTvlUsd), `${nf(p.poolsTracked)} pools · ${nf(p.positionsTotal)} positions`, '', 'tvl');
+  tile(t, 'Fees 24h', usd(p.fees.h24), `${usd(p.fees.h4)} last 4h`, '', 'fees');
+  tile(t, 'Fee yield', pct(p.feeYield24hPct, 2) + '/day', `weekly average ${pct(p.feeYield7dAvgPct, 2)}`, '', 'feeYield');
+  tile(t, 'Fees all-time', usd(p.lifetimeFeesUsd), `${nf(p.lifetimeOwners)} LPs ever`, '', 'fees');
+  tile(t, 'Chain volume 24h', usd(p.chainVolume24hUsd), `${nf(p.chainTrades24h)} trades · ${nf(p.chainPoolsIndexed)} pools`, '', 'volume');
+  tile(t, 'New positions 24h', nf(p.opened.h24), `${nf(p.owners.h24)} unique LPs`, '', 'positions');
+
+  const L = d.liquidity, lt = document.getElementById('tiles-liq');
+  lt.textContent = '';
+  tile(lt, 'Pool depth', usd(L.poolTvlUsd), `${nf(L.tokenInPool)} DELTA + ${nf(L.wethInPool, 1)} WETH`, '', 'depth');
+  tile(lt, 'Active within ±2%', usd(L.activeUsd), pct(L.activePct, 2) + ' of pool capital', '', 'active');
+  tile(lt, 'Idle (beyond ±2%)', usd(L.idleUsd), pct(100 - L.activePct, 2) + ' of pool capital', '', 'active');
+  tile(lt, 'Efficiency on active', (L.capitalEfficiency ?? 0).toFixed(0) + '×', `${(L.capitalEfficiencyTvl ?? 0).toFixed(1)}× on full pool`, '', 'capeff');
+
+  const st = s.staking, sd = document.getElementById('tiles-stake');
+  sd.textContent = '';
+  const ends = st.farms.filter((f) => f.streaming).map((f) => f.rewardsEndsInDays).filter((v) => v != null);
+  const minEnd = ends.length ? Math.min(...ends) : null;
+  tile(sd, 'Total value staked', usd(st.totalStakedUsd), `${st.streamingCount} of ${st.farmCount} farms streaming`, '', 'staked');
+  tile(sd, 'WETH emissions', st.totalRewardsWethPerDay.toFixed(4) + ' /day', usd(st.totalRewardsUsdPerDay) + ' per day', '', 'emissions');
+  tile(sd, 'Blended real yield', pct(st.blendedAprPct, 0), 'WETH rewards ÷ staked value', '', 'emissions');
+  tile(sd, 'Rewards funded for', minEnd == null ? '—' : minEnd.toFixed(1) + ' days',
+    minEnd != null && minEnd < 2 ? 'streams end soon' : 'until current period ends',
+    minEnd != null && minEnd < 2 ? 'neg' : '', 'emissions');
+
+  const sup = d.supply, tt = document.getElementById('tiles-token');
+  tt.textContent = '';
+  tile(tt, 'Market cap', usd(sup.marketCapUsd), `full ${nf(sup.total / 1e6, 0)}M supply priced`, '', 'mcap');
+  tile(tt, 'Tradeable float', usd(sup.floatCapUsd), `${nf(sup.circulating / 1e6, 0)}M of ${nf(sup.total / 1e6, 0)}M \u00b7 ${pct(sup.lockedPctOfSupply, 0)} locked`, '', 'float');
+  tile(tt, 'Holders', nf(d.holders.count), `${nf(d.holders.transfers)} transfers`, '', 'holders');
+  tile(tt, 'Turnover 24h', pct(d.turnover24hPct, 0), `${usd(d.volume24hUsd)} traded`, '', 'turnover');
+}
+
+function renderDepth() {
+  const L = SNAP.delta.liquidity;
+  const band2 = L.depth.pct2?.totalUsd || 0;
+  const band5 = Math.max((L.depth.pct5?.totalUsd || 0) - band2, 0);
+  const rest = Math.max(L.poolTvlUsd - band2 - band5, 0);
+  stackedBar(document.getElementById('depth-seg'), document.getElementById('depth-legend'), [
+    { k: 'Within ±2% of spot', v: band2, t: usd(band2), c: css('--o1') },
+    { k: '±2% to ±5%', v: band5, t: usd(band5), c: css('--o2') },
+    { k: 'Beyond ±5%', v: rest, t: usd(rest), c: css('--o3') },
+  ]);
+  document.getElementById('depth-sub').textContent =
+    `Total pool capital ${usd(L.poolTvlUsd)} · tick ${nf(L.tick)} · spacing ${L.tickSpacing}`;
+  document.getElementById('depth-note').innerHTML =
+    `Measured by walking the pool's initialised ticks outward from spot, not by dividing TVL. ` +
+    `Only <b>${pct(L.activePct, 2)}</b> of the pool's capital is close enough to spot to absorb a trade ` +
+    `without meaningful slippage — the signature of broad, near-full-range liquidity rather than tightly ` +
+    `shaped positions. Split by side: <b>${usd(L.depth.pct2.sellDepthUsd)}</b> of WETH absorbs sells, ` +
+    `<b>${usd(L.depth.pct2.buyDepthUsd)}</b> of DELTA absorbs buys. ` +
+    `Measured across ${SNAP.delta.poolsReadable ?? 1} readable pool${(SNAP.delta.poolsReadable ?? 1) === 1 ? '' : 's'}` +
+    `${SNAP.delta.poolsUnreadable ? `; ${SNAP.delta.poolsUnreadable} v4 pool(s) cannot be read with v3 calls and are excluded` : ''}.`;
+}
+
+function renderFarms() {
+  const rows = SNAP.staking.farms
+    .filter((f) => (f.stakedUsd || 0) > 0.5 || f.rewardsWethPerDay > 0)
+    .sort((a, b) => (b.stakedUsd || 0) - (a.stakedUsd || 0));
+  const max = Math.max(...rows.map((r) => r.aprPct || 0), 1);
+  table(document.getElementById('farms-table'), [
+    { h: 'Pair', f: (r) => `${addrLink(r.farm, r.pair)}<span class="tag">${(r.feeTier / 1e4).toFixed(2)}%</span>` },
+    { h: 'Staked', f: (r) => usd(r.stakedUsd) },
+    { h: 'WETH / day', f: (r) => r.rewardsWethPerDay > 0 ? r.rewardsWethPerDay.toPrecision(3) : '—' },
+    { h: 'Value / day', f: (r) => r.rewardsUsdPerDay > 0.005 ? usd(r.rewardsUsdPerDay, { compact: false }) : '—' },
+    { h: 'Real yield APR', f: (r) => r.aprPct == null ? '—' :
+        `<div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+           <span>${pct(r.aprPct, 0)}</span>
+           <span class="bar-track" style="width:64px"><span class="bar-fill" style="width:${Math.min(100, (r.aprPct / max) * 100).toFixed(1)}%"></span></span>
+         </div>` },
+    { h: 'Ends in', f: (r) => r.rewardsEndsInDays == null || !r.streaming ? '—' : r.rewardsEndsInDays.toFixed(1) + 'd' },
+  ], rows);
+}
+
+function renderToken() {
+  const d = SNAP.delta, sup = d.supply, h = d.holders;
+  const locked = sup.nonCirculating;
+  const excluded = new Set((sup.excluded || []).map((e) => (e.address || '').toLowerCase()));
+  const topWallets = h.top.slice(0, 10)
+    .filter((t) => !excluded.has((t.address || '').toLowerCase()))
+    .reduce((s, t) => s + t.balance, 0);
+  const rest = Math.max(sup.total - locked - topWallets, 0);
+  stackedBar(document.getElementById('conc-seg'), document.getElementById('conc-legend'), [
+    { k: 'Locked', v: locked, t: nf(locked / 1e6, 1) + 'M', c: css('--o1') },
+    { k: 'Rest of top 10', v: topWallets, t: nf(topWallets / 1e6, 1) + 'M', c: css('--o2') },
+    { k: 'Everyone else', v: rest, t: nf(rest / 1e6, 1) + 'M', c: css('--o3') },
+  ]);
+  const kv = document.getElementById('conc-kv');
+  kv.textContent = '';
+  const add = (k, v) => kv.append(el('div', 'kv', `<span>${k}</span><b>${v}</b>`));
+  add('Top 10 addresses', pct(h.top10Pct, 2));
+  add('Top 50 addresses', pct(h.top50Pct, 2));
+  add('Top 10 wallets (contracts excluded)', pct(h.top10WalletsPct, 2));
+  add('Gini (approx.)', h.giniApprox == null ? '—' : h.giniApprox.toFixed(3));
+  add('Tradeable float ÷ market cap', pct((sup.floatCapUsd / sup.marketCapUsd) * 100, 1));
+
+  const list = document.getElementById('holders-list');
+  list.textContent = '';
+  const top = h.top.slice(0, 10);
+  const mx = Math.max(...top.map((t) => t.pctOfSupply), 1);
+  top.forEach((t) => {
+    const row = el('div');
+    row.style.cssText = 'margin-bottom:9px';
+    row.innerHTML =
+      `<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:3px">
+         <span class="mono">${addrLink(t.address)}${t.label ? `<span class="tag">${esc(t.label)}</span>` : (t.isContract ? '<span class="tag">contract</span>' : '')}</span>
+         <span style="font-variant-numeric:tabular-nums;color:var(--ink-2)">${t.pctOfSupply.toFixed(2)}%</span>
+       </div>
+       <span class="bar-track" style="display:block"><span class="bar-fill" style="width:${((t.pctOfSupply / mx) * 100).toFixed(1)}%"></span></span>`;
+    list.append(row);
+  });
+}
+
+function renderPools() {
+  table(document.getElementById('pools-table'), [
+    { h: 'Token', f: (r) => `${esc(r.symbol)}${r.isNew ? '<span class="tag">new</span>' : ''}<span class="tag">${(r.feePpm / 1e4).toFixed(2)}%</span>` },
+    { h: 'Price', f: (r) => usd(r.priceUsd, { compact: false }) },
+    { h: '24h', f: (r) => r.change24hPct == null ? '—' : `<span class="${r.change24hPct >= 0 ? 'pos' : 'neg'}">${signed(r.change24hPct)}</span>` },
+    { h: 'Market cap', f: (r) => usd(r.marketCapUsd) },
+    { h: 'Volume 24h', f: (r) => usd(r.volume24hUsd) },
+    { h: 'Fees 24h', f: (r) => usd(r.fees24hUsd) },
+    { h: 'Trades', f: (r) => nf(r.trades24h) },
+    { h: 'Age', f: (r) => r.ageDays == null ? '—' : r.ageDays.toFixed(0) + 'd' },
+  ], SNAP.topPools);
+}
+
+// -------------------------------------------------------------- history ----
+function series() {
+  let rows = HIST.slice().sort((a, b) => a.ts - b.ts);
+  if (RANGE > 0) {
+    const cut = Math.floor(Date.now() / 1000) - RANGE * 86400;
+    const f = rows.filter((r) => r.ts >= cut);
+    if (f.length >= 2) rows = f;
+  }
+  const spanDays = rows.length ? (rows[rows.length - 1].ts - rows[0].ts) / 86400 : 0;
+  if (spanDays > 3) {
+    const byDay = new Map();
+    rows.forEach((r) => byDay.set(r.date, r));
+    rows = [...byDay.values()].sort((a, b) => a.ts - b.ts);
+  }
+  return { rows, daily: spanDays > 3 };
+}
+
+function renderCharts() {
+  const host = document.getElementById('charts');
+  host.textContent = '';
+  const { rows, daily } = series();
+  const note = document.getElementById('hist-note');
+  if (rows.length < 2) {
+    note.innerHTML = `Only <b>${rows.length}</b> snapshot recorded so far (first: ${rows[0] ? esc(rows[0].date) : '—'}). ` +
+      `The collector runs every 4 hours; the trend lines start drawing after the second run.`;
+  } else {
+    note.innerHTML = `<b>${rows.length}</b> ${daily ? 'daily points' : 'snapshots'} from ${esc(rows[0].date)} to ${esc(rows[rows.length - 1].date)}. ` +
+      `Every chart has one measure and one y-axis; hover or use the arrow keys to read a point.`;
+  }
+
+  const mk = (key, title, fmt, sub, why, adv) => {
+    const pts = rows.filter((r) => r[key] != null).map((r) => ({
+      v: r[key],
+      label: daily ? r.date.slice(5) : new Date(r.ts * 1000).toLocaleTimeString('en-US', { hour: 'numeric' }),
+      full: new Date(r.ts * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    }));
+    const before = host.childElementCount;
+    lineChart(host, { title, points: pts, fmt, sub, why });
+    if (adv && host.children[before]) host.children[before].classList.add('adv');
+  };
+
+  mk('deltaPriceUsd', 'DELTA price', (v) => usd(v, { compact: false }), 'Spot price in the DELTA/WETH pool', 'price');
+  mk('fees24hUsd', 'Protocol fees, 24h', (v) => usd(v), 'Revenue Delta positions actually collected', 'fees');
+  mk('managedTvlUsd', 'Delta TVL', (v) => usd(v), 'Capital held in Delta positions', 'tvl');
+  mk('holders', 'DELTA holders', (v) => nf(v), 'Distinct addresses holding DELTA', 'holders');
+  mk('activePct', 'Active liquidity share', (v) => v.toFixed(2) + '%', 'Pool capital within ±2% of spot', 'depth');
+  mk('top10Pct', 'Top-10 concentration', (v) => v.toFixed(1) + '%', 'Share held by the 10 largest addresses', 'concentration');
+  mk('volume24hUsd', 'Chain volume, 24h', (v) => usd(v), 'Across every pool Delta tracks', 'volume', true);
+  mk('positions', 'Open positions', (v) => nf(v), 'Cumulative positions created', 'positions', true);
+  mk('stakedUsd', 'Value staked', (v) => usd(v), 'USD in Delta stake vaults', 'staked', true);
+
+  table(document.getElementById('hist-table-el'), [
+    { h: 'Time', f: (r) => new Date(r.ts * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' }) },
+    { h: 'Price', f: (r) => usd(r.deltaPriceUsd, { compact: false }) },
+    { h: 'Fees 24h', f: (r) => usd(r.fees24hUsd) },
+    { h: 'TVL', f: (r) => usd(r.managedTvlUsd) },
+    { h: 'Volume 24h', f: (r) => usd(r.volume24hUsd) },
+    { h: 'DELTA MC', f: (r) => usd(r.deltaMcUsd) },
+    { h: 'Holders', f: (r) => nf(r.holders) },
+    { h: 'Staked', f: (r) => usd(r.stakedUsd) },
+    { h: 'Active %', f: (r) => r.activePct == null ? '—' : r.activePct.toFixed(2) + '%' },
+    { h: 'Top 10 %', f: (r) => r.top10Pct == null ? '—' : r.top10Pct.toFixed(1) + '%' },
+  ], rows.slice().reverse());
+}
+
+function renderFooter() {
+  const s = SNAP;
+  document.getElementById('foot-sources').innerHTML =
+    `Sources: <a href="https://deltaliquidity.app" target="_blank" rel="noopener">deltaliquidity.app</a> read API · ` +
+    `<a href="${s.sources.chain}" target="_blank" rel="noopener">Robinhood Chain RPC</a> (contract reads) · ` +
+    `<a href="${SCOUT}/token/${s.delta.token}" target="_blank" rel="noopener">Blockscout</a> (supply &amp; holders). ` +
+    `DELTA token <span class="mono">${esc(s.delta.token)}</span>. ` +
+    `ETH/USD ${usd(s.ethUsd, { compact: false })} via ${esc(s.ethUsdSource || 'unknown source')}.`;
+  document.getElementById('foot-notes').innerHTML =
+    Object.values(s.notes || {}).map((n) => '· ' + esc(n)).join('<br>');
+}
+
+function renderAll() {
+  renderHead(); renderDirection(); beginnerCards(); renderTiles();
+  renderDepth(); renderFarms(); renderToken(); renderPools();
+  renderCharts(); renderFooter();
+}
+
+// ============================================================== share card ==
+/**
+ * Draws the summary card on a canvas at 2x and hands back a PNG.
+ * 1200x1500 (4:5) fills the timeline on a phone; 1600x900 (16:9) is the safe
+ * landscape option. Both display uncropped on X.
+ */
+function drawCard(size) {
+  const portrait = size === 45;
+  const W = portrait ? 1200 : 1600, H = portrait ? 1500 : 900, R = 2;
+  const cv = document.createElement('canvas');
+  cv.width = W * R; cv.height = H * R;
+  const g = cv.getContext('2d');
+  g.scale(R, R);
+
+  const s = SNAP, d = s.delta, sup = d.supply, L = d.liquidity;
+  const F = '-apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif';
+  const ink = '#ffffff', ink2 = '#9c9c96', line = '#2c2c2a';
+  const accent = '#3987e5', up = '#22c55e', down = '#f0616a';
+  const chg = d.change24hPct ?? 0;
+  const trend = chg >= 0 ? up : down;
+  const P = portrait ? 76 : 84;
+
+  const txt = (str, x, y, { s = 30, w = '500', c = ink, a = 'left' } = {}) => {
+    g.font = `${w} ${s}px ${F}`; g.fillStyle = c; g.textAlign = a; g.textBaseline = 'alphabetic';
+    g.fillText(str, x, y);
+    return g.measureText(str).width;
+  };
+  const width = (str, s, w) => { g.font = `${w} ${s}px ${F}`; return g.measureText(str).width; };
+  const roundRect = (x, y, w, h, r) => {
+    g.beginPath();
+    g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  };
+
+  // ---- ground. Vertical gradient only: a diagonal one leaves a visible seam
+  // where the filled rect ends before the gradient has reached zero alpha.
+  g.fillStyle = '#101010'; g.fillRect(0, 0, W, H);
+  const washH = portrait ? 700 : 500;
+  const wash = g.createLinearGradient(0, 0, 0, washH);
+  wash.addColorStop(0, 'rgba(57,135,229,0.15)');
+  wash.addColorStop(1, 'rgba(57,135,229,0)');
+  g.fillStyle = wash; g.fillRect(0, 0, W, washH);
+
+  // ---- header
+  const hy = P + 38;
+  g.fillStyle = accent; roundRect(P, hy - 34, 46, 46, 12); g.fill();
+  g.fillStyle = '#fff'; g.beginPath();
+  g.moveTo(P + 23, hy - 25); g.lineTo(P + 36, hy + 3); g.lineTo(P + 10, hy + 3); g.closePath(); g.fill();
+  txt('DELTA', P + 62, hy - 2, { s: 34, w: '700' });
+  txt('Robinhood Chain', P + 62, hy + 26, { s: 19, w: '500', c: ink2 });
+
+  const dirTone = { expanding: up, cooling: down, steady: ink2 }[s.direction?.state] || ink2;
+  const label = (s.direction?.headline || '').toUpperCase();
+  const cw = width(label, 18, '700') + 42;
+  g.fillStyle = dirTone + '1f'; roundRect(W - P - cw, hy - 30, cw, 40, 20); g.fill();
+  g.strokeStyle = dirTone + '55'; g.lineWidth = 1.5; g.stroke();
+  g.fillStyle = dirTone; g.beginPath(); g.arc(W - P - cw + 19, hy - 10, 5, 0, 7); g.fill();
+  txt(label, W - P - cw + 31, hy - 3, { s: 18, w: '700', c: dirTone });
+
+  // Each orientation gets its own explicit geometry. Sharing offsets between a
+  // 4:5 and a 16:9 canvas is how the landscape card ended up overrunning its
+  // own footer, so the two are kept fully separate below.
+  // Laid out from the footer upward: grid bottom -> read -> signals -> rule.
+  const LAY = portrait
+    ? { priceY: 316, pSize: 104, sparkX: P, sparkY: 396, sparkW: W - P * 2, sparkH: 132,
+        gridX: P, gridTop: 596, cols: 2, gh: 124,           // 3 rows end at 1004
+        readTop: 1072, readSize: 28, readLead: 40, readMaxLines: 4, readW: W - P * 2,
+        signalsY: 1290, footRule: H - 74, footText: H - 40 }
+    : { priceY: 286, pSize: 92, sparkX: 880, sparkY: 190, sparkW: W - P - 880, sparkH: 112,
+        gridX: P, gridTop: 348, cols: 3, gh: 118,           // 2 rows end at 602
+        readTop: 664, readSize: 25, readLead: 36, readMaxLines: 2, readW: W - P * 2,
+        signalsY: null, footRule: H - 74, footText: H - 40 };
+
+  // ---- price
+  const priceY = LAY.priceY;
+  txt('PRICE', P, priceY - 92, { s: 16, w: '650', c: ink2 });
+  const priceStr = usd(d.priceUsd, { compact: false });
+  const pw = txt(priceStr, P, priceY, { s: LAY.pSize, w: '700' });
+  txt(signed(chg, 1) + ' 24h', P + pw + 24, priceY - 8, { s: 32, w: '660', c: trend });
+  txt(`${usd(sup.marketCapUsd)} market cap`, P + pw + 24, priceY + 30, { s: 22, w: '500', c: ink2 });
+
+  // ---- 24h sparkline
+  const sp = (d.spark24h || []).filter((v) => v > 0);
+  const sh = LAY.sparkH;
+  if (sp.length > 3) {
+    const sw = LAY.sparkW, sx = LAY.sparkX, sy = LAY.sparkY;
+    const lo = Math.min(...sp), hi = Math.max(...sp);
+    const px = (i) => sx + (i / (sp.length - 1)) * sw;
+    const py = (v) => sy + sh - ((v - lo) / (hi - lo || 1)) * sh;
+    txt('LAST 24 HOURS', sx, sy - 16, { s: 14, w: '650', c: ink2 });
+    g.beginPath(); g.moveTo(px(0), py(sp[0]));
+    sp.forEach((v, i) => g.lineTo(px(i), py(v)));
+    g.lineTo(px(sp.length - 1), sy + sh); g.lineTo(px(0), sy + sh); g.closePath();
+    const fg = g.createLinearGradient(0, sy, 0, sy + sh);
+    fg.addColorStop(0, trend + '40'); fg.addColorStop(1, trend + '00');
+    g.fillStyle = fg; g.fill();
+    g.beginPath(); g.moveTo(px(0), py(sp[0]));
+    sp.forEach((v, i) => g.lineTo(px(i), py(v)));
+    g.strokeStyle = trend; g.lineWidth = 3.5; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke();
+    g.fillStyle = trend; g.beginPath();
+    g.arc(px(sp.length - 1), py(sp[sp.length - 1]), 6.5, 0, 7); g.fill();
+  }
+
+  // ---- stat grid
+  const stats = [
+    ['Fees, 24h', usd(s.protocol.fees.h24), 'real revenue'],
+    ['Delta TVL', usd(s.protocol.managedTvlUsd), `${nf(s.protocol.positionsTotal)} positions`],
+    ['Depth ±2%', usd(L.depth.pct2.sellDepthUsd), 'absorbs a sell'],
+    ['Holders', nf(d.holders.count), `top 10 hold ${pct(d.holders.top10WalletsPct, 0)}`],
+    ['Traded today', pct(d.turnover24hPct, 0), 'of the float'],
+    ['Fee yield', pct(s.protocol.feeYield24hPct, 1) + '/day', 'on Delta TVL'],
+  ];
+  const cols = LAY.cols;
+  const gw = (W - P * 2 - (cols - 1) * 18) / cols, gh = LAY.gh;
+  stats.forEach((st, i) => {
+    const cx = LAY.gridX + (i % cols) * (gw + 18), cy = LAY.gridTop + Math.floor(i / cols) * (gh + 18);
+    g.fillStyle = '#191918'; roundRect(cx, cy, gw, gh, 15); g.fill();
+    g.strokeStyle = line; g.lineWidth = 1; g.stroke();
+    txt(st[0].toUpperCase(), cx + 24, cy + 36, { s: 15, w: '650', c: ink2 });
+    txt(st[1], cx + 24, cy + 80, { s: 38, w: '690' });
+    txt(st[2], cx + 24, cy + 105, { s: 16, w: '500', c: ink2 });
+  });
+
+  // ---- the read, wrapped to a fixed number of lines so it cannot run past the footer
+  const readTop = LAY.readTop;
+  txt('THE READ', P, readTop, { s: 15, w: '650', c: ink2 });
+  g.font = `500 ${LAY.readSize}px ${F}`;
+  const lines = [];
+  let buf = '';
+  for (const word of (s.direction?.summary || '').split(' ')) {
+    const test = buf ? buf + ' ' + word : word;
+    if (g.measureText(test).width > LAY.readW && buf) { lines.push(buf); buf = word; }
+    else buf = test;
+  }
+  if (buf) lines.push(buf);
+  while (lines.length > LAY.readMaxLines) {
+    lines.pop();
+    let t = lines[lines.length - 1];
+    while (g.measureText(t + '…').width > LAY.readW && t.includes(' ')) t = t.slice(0, t.lastIndexOf(' '));
+    lines[lines.length - 1] = t + '…';
+  }
+  g.fillStyle = '#e9e8e3';
+  let lineY = readTop + LAY.readLead + 8;
+  lines.forEach((l) => { g.fillText(l, P, lineY); lineY += LAY.readLead; });
+
+  // ---- signal strip: the ratios behind the read, so the claim is checkable
+  const sig = LAY.signalsY ? (s.direction?.signals || []).filter((x) => isFinite(x.value)).slice(0, 3) : [];
+  if (sig.length) {
+    let sxp = P;
+    const sy = LAY.signalsY;
+    sig.forEach((x) => {
+      const arrow = x.score > 0 ? '▲' : x.score < 0 ? '▼' : '■';
+      const tone = x.score > 0 ? up : x.score < 0 ? down : ink2;
+      const t1 = `${arrow} ${x.value.toFixed(2)}×`;
+      const t2 = x.label;
+      const bw = Math.max(width(t1, 22, '700'), width(t2, 15, '500')) + 40;
+      if (sxp + bw > W - P) return;
+      g.fillStyle = '#161615'; roundRect(sxp, sy, bw, 78, 12); g.fill();
+      g.strokeStyle = line; g.stroke();
+      txt(t1, sxp + 20, sy + 34, { s: 22, w: '700', c: tone });
+      txt(t2, sxp + 20, sy + 60, { s: 15, w: '500', c: ink2 });
+      sxp += bw + 14;
+    });
+  }
+
+  // ---- footer
+  g.strokeStyle = line; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(P, LAY.footRule); g.lineTo(W - P, LAY.footRule); g.stroke();
+  const when = new Date(s.ts * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  txt(`On-chain data · ${when} · block ${nf(s.block)}`, P, LAY.footText, { s: 17, w: '500', c: ink2 });
+  txt('Information only, not financial advice', W - P, LAY.footText, { s: 17, w: '500', c: ink2, a: 'right' });
+  return cv;
+}
+
+function openCard() {
+  const cv = drawCard(CARD_SIZE);
+  const img = document.getElementById('card-img');
+  img.src = cv.toDataURL('image/png');
+  img.dataset.name = `delta-${new Date(SNAP.ts * 1000).toISOString().slice(0, 10)}-${CARD_SIZE === 45 ? '4x5' : '16x9'}.png`;
+  document.getElementById('modal').classList.add('on');
+}
+
+// --------------------------------------------------------------- live -----
+async function refreshLive() {
+  const btn = document.getElementById('refresh');
+  btn.disabled = true; btn.textContent = 'Refreshing…';
+  try {
+    const [st, tv] = await Promise.all([
+      fetch('https://deltaliquidity.app/stats').then((r) => r.json()),
+      fetch('https://deltaliquidity.app/ix/pnl/tvl').then((r) => r.json()),
+    ]);
+    const w = st.windows || {};
+    SNAP.protocol.managedTvlUsd = tv.tvlUsd ?? SNAP.protocol.managedTvlUsd;
+    SNAP.protocol.poolsTracked = tv.pools ?? SNAP.protocol.poolsTracked;
+    SNAP.protocol.positionsTotal = st.positionsTotal ?? SNAP.protocol.positionsTotal;
+    SNAP.protocol.lifetimeFeesUsd = st.feesUsd ?? SNAP.protocol.lifetimeFeesUsd;
+    const map = { '4h': 'h4', '12h': 'h12', '24h': 'h24', '7d': 'd7', '14d': 'd14', '30d': 'd30' };
+    for (const k in map) if (w[k]?.feesUsd != null) SNAP.protocol.fees[map[k]] = w[k].feesUsd;
+    if (w['24h']) { SNAP.protocol.opened.h24 = w['24h'].opened; SNAP.protocol.owners.h24 = w['24h'].uniqueOwners; }
+    if (w['4h']) SNAP.protocol.opened.h4 = w['4h'].opened;
+    if (w['7d']) SNAP.protocol.opened.d7 = w['7d'].opened;
+    if (SNAP.protocol.managedTvlUsd) {
+      SNAP.protocol.feeYield24hPct = (SNAP.protocol.fees.h24 / SNAP.protocol.managedTvlUsd) * 100;
+      SNAP.protocol.feeYield7dAvgPct = (SNAP.protocol.fees.d7 / 7 / SNAP.protocol.managedTvlUsd) * 100;
+    }
+    // recompute the same ratios the collector uses, from the refreshed windows
+    const rate = (k, h) => (w[k]?.feesUsd != null ? w[k].feesUsd / h : null);
+    const orate = (k, h) => (w[k]?.opened != null ? w[k].opened / h : null);
+    const f24 = rate('24h', 24), f7 = rate('7d', 168), f4 = rate('4h', 4);
+    const o24 = orate('24h', 24), o7 = orate('7d', 168);
+    SNAP.momentum = {
+      ...SNAP.momentum,
+      feeVsWeek: f24 && f7 ? f24 / f7 : SNAP.momentum.feeVsWeek,
+      feeVsDay: f4 && f24 ? f4 / f24 : SNAP.momentum.feeVsDay,
+      lpVsWeek: o24 && o7 ? o24 / o7 : SNAP.momentum.lpVsWeek,
+    };
+    SNAP.ts = st.updatedTs || Math.floor(Date.now() / 1000);
+    SNAP.seed = false;
+    renderHead(); renderTiles(); beginnerCards();
+    btn.textContent = 'Updated ✓';
+  } catch (e) {
+    btn.textContent = 'Live fetch blocked';
+  }
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Refresh'; }, 2500);
+}
+
+// --------------------------------------------------------------- boot -----
+async function boot() {
+  const bust = '?t=' + Math.floor(Date.now() / 60000);
+  try {
+    SNAP = await fetch('data/latest.json' + bust).then((r) => r.json());
+  } catch (e) {
+    document.getElementById('subtitle').textContent =
+      'Could not load data/latest.json — run the collector once (node scripts/snapshot.mjs).';
+    return;
+  }
+  try { HIST = await fetch('data/history.json' + bust).then((r) => r.json()); } catch (e) { HIST = []; }
+  if (!Array.isArray(HIST)) HIST = [];
+  renderAll();
+}
+
+// --------------------------------------------------------------- events ---
+let saved = null;
+try { saved = localStorage.getItem('delta-mode'); } catch (e) { /* private mode */ }
+if (saved === 'full' || saved === 'simple') document.body.dataset.mode = saved;
+document.querySelectorAll('#mode button').forEach((b) => {
+  b.setAttribute('aria-pressed', String(b.dataset.mode === document.body.dataset.mode));
+  b.addEventListener('click', () => {
+    document.body.dataset.mode = b.dataset.mode;
+    try { localStorage.setItem('delta-mode', b.dataset.mode); } catch (e) { /* ignore */ }
+    document.querySelectorAll('#mode button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    if (SNAP) renderCharts();
+  });
+});
+document.getElementById('theme').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const dark = cur ? cur === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  if (SNAP) { renderDepth(); renderToken(); renderCharts(); }
+});
+document.getElementById('refresh').addEventListener('click', refreshLive);
+document.getElementById('share').addEventListener('click', openCard);
+document.getElementById('card-close').addEventListener('click', () => document.getElementById('modal').classList.remove('on'));
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') e.currentTarget.classList.remove('on');
+});
+document.getElementById('card-dl').addEventListener('click', () => {
+  const img = document.getElementById('card-img');
+  const a = document.createElement('a');
+  a.href = img.src; a.download = img.dataset.name || 'delta-card.png';
+  document.body.append(a); a.click(); a.remove();
+});
+document.getElementById('card-size').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-size]');
+  if (!b) return;
+  CARD_SIZE = Number(b.dataset.size);
+  document.querySelectorAll('#card-size button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  openCard();
+});
+document.getElementById('ranges').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-range]');
+  if (!b) return;
+  RANGE = Number(b.dataset.range);
+  [...e.currentTarget.querySelectorAll('button[data-range]')].forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  renderCharts();
+});
+document.getElementById('toggle-table').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  document.getElementById('hist-table').classList.toggle('hide', !on);
+});
+window.addEventListener('scroll', hidePop, { passive: true });
+
+boot();
+})();
+</script>
+</body>
+</html>
